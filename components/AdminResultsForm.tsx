@@ -1,25 +1,19 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { saveDraftResults } from "@/app/actions/admin";
-import type { PlayerRow } from "@/lib/types";
 
-type Props = { players: PlayerRow[]; configured: boolean };
+type Props = { configured: boolean };
 
-export function AdminResultsForm({ players, configured }: Props) {
-  const byName = useMemo(
-    () => [...players].sort((a, b) => a.name.localeCompare(b.name)),
-    [players],
-  );
-  const [secret, setSecret] = useState("");
+export function AdminResultsForm({ configured }: Props) {
   const [slots, setSlots] = useState<string[]>(() => Array.from({ length: 32 }, () => ""));
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function setSlot(i: number, playerId: string) {
+  function setSlot(i: number, playerName: string) {
     setSlots((prev) => {
       const next = [...prev];
-      next[i] = playerId;
+      next[i] = playerName;
       return next;
     });
     setMessage(null);
@@ -29,13 +23,13 @@ export function AdminResultsForm({ players, configured }: Props) {
     e.preventDefault();
     setMessage(null);
     if (!configured) return;
-    const missing = slots.some((id) => !id);
+    const missing = slots.some((name) => !name.trim());
     if (missing) {
-      setMessage({ type: "err", text: "Select a player for every pick 1–32." });
+      setMessage({ type: "err", text: "Enter a player name for every pick 1–32." });
       return;
     }
     startTransition(async () => {
-      const res = await saveDraftResults(secret, slots);
+      const res = await saveDraftResults(slots);
       if (res.ok) setMessage({ type: "ok", text: "Draft results saved." });
       else setMessage({ type: "err", text: res.error ?? "Save failed." });
     });
@@ -52,39 +46,17 @@ export function AdminResultsForm({ players, configured }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="secret" className="mb-2 block text-sm font-medium text-[var(--muted)]">
-          Admin secret
-        </label>
-        <input
-          id="secret"
-          type="password"
-          value={secret}
-          onChange={(e) => {
-            setSecret(e.target.value);
-            setMessage(null);
-          }}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-white outline-none focus:border-[var(--accent)]"
-          autoComplete="off"
-        />
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-2">
         {slots.map((val, i) => (
           <div key={i} className="flex flex-col gap-1">
             <label className="text-xs font-medium text-[var(--muted)]">Pick {i + 1}</label>
-            <select
+            <input
+              type="text"
               value={val}
               onChange={(e) => setSlot(i, e.target.value)}
+              placeholder="Type player name"
               className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-white outline-none focus:border-[var(--accent)]"
-            >
-              <option value="">— choose —</option>
-              {byName.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         ))}
       </div>

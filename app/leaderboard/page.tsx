@@ -1,11 +1,30 @@
 import Link from "next/link";
+import { isAdminSession } from "@/lib/admin-session";
+import { getLeaderboardRevealDate, leaderboardIsPublic } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeScores, resultsAreComplete, type DraftResultMap } from "@/lib/scoring";
-import type { SubmissionWithPicks } from "@/lib/types";
+import type { PlayerPosition, SubmissionWithPicks } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+const POSITION_ORDER: PlayerPosition[] = ["QB", "RB", "WR", "TE", "OL", "Edge", "DT", "LB", "CB", "S"];
 
 export default async function LeaderboardPage() {
+  const isAdmin = await isAdminSession();
+  const isPublic = leaderboardIsPublic();
+  const revealAt = getLeaderboardRevealDate();
+
+  if (!isAdmin && !isPublic) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight text-white">Leaderboard</h1>
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Submissions are hidden until{" "}
+          {revealAt ? revealAt.toLocaleString() : "the reveal deadline"}. Admin can still view now.
+        </p>
+      </div>
+    );
+  }
+
   let submissions: SubmissionWithPicks[] = [];
   let resultsMap: DraftResultMap = new Map();
   let loadError: string | null = null;
@@ -15,7 +34,7 @@ export default async function LeaderboardPage() {
     const { data: subData, error: subErr } = await supabase
       .from("submissions")
       .select(
-        `id, username, created_at, picks (player_id, is_first_round, is_top_10, players (name))`,
+        `id, username, created_at, picks (player_id, is_first_round, is_top_10, players (name, position))`,
       )
       .order("created_at", { ascending: false });
 
@@ -82,6 +101,15 @@ export default async function LeaderboardPage() {
             const firstCount = s.picks.filter((p) => p.is_first_round).length;
             const topCount = s.picks.filter((p) => p.is_top_10).length;
             const sc = scores?.get(s.id);
+            const firstRoundByPosition = POSITION_ORDER.map((pos) => ({
+              position: pos,
+              picks: s.picks.filter(
+                (p) => p.is_first_round && p.players?.position === pos,
+              ),
+            })).filter((g) => g.picks.length > 0);
+            const top10Picks = s.picks
+              .filter((p) => p.is_top_10)
+              .sort((a, b) => (a.players?.position ?? "").localeCompare(b.players?.position ?? ""));
             return (
               <li
                 key={s.id}
@@ -116,21 +144,43 @@ export default async function LeaderboardPage() {
                 </div>
                 <details className="mt-3 text-sm">
                   <summary className="cursor-pointer text-[var(--muted)] hover:text-white">
-                    Full pick list
+                    First-round picks by position
                   </summary>
-                  <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto text-[var(--muted)]">
-                    {s.picks
-                      .filter((p) => p.is_first_round)
-                      .map((p) => (
-                        <li key={p.player_id}>
-                          {p.players?.name ?? "Player"}
-                          {p.is_top_10 ? (
-                            <span className="ml-2 rounded bg-emerald-500/20 px-1.5 py-0.5 text-xs text-emerald-200">
-                              Top 10
-                            </span>
-                          ) : null}
-                        </li>
-                      ))}
+                  <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                    {firstRoundByPosition.map((group) => (
+                      <div key={group.position} className="rounded-lg border border-[var(--border)] p-3">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-white">
+                          {group.position}
+                        </p>
+                        <ul className="space-y-1 text-[var(--muted)]">
+                          {group.picks.map((p) => (
+                            <li key={p.player_id}>
+                              {p.players?.name ?? "Player"}
+                              {p.is_top_10 ? (
+                                <span className="ml-2 rounded bg-emerald-500/20 px-1.5 py-0.5 text-xs text-emerald-200">
+                                  Top 10
+                                </span>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+
+                <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-[var(--muted)] hover:text-white">
+                    Top 10 picks
+                  </summary>
+                  <ul className="mt-2 space-y-1 text-[var(--muted)]">
+                    {top10Picks.map((p) => (
+                      <li key={p.player_id}>
+                        {p.players?.name ?? "Player"}
+                        <span className="ml-2 text-xs text-slate-400">({p.players?.position ?? "N/A"})</span>
+                      </li>
+                    ))}
+                    {top10Picks.length === 0 ? <li>No top-10 picks selected.</li> : null}
                   </ul>
                 </details>
               </li>

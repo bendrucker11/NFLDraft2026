@@ -1,6 +1,6 @@
 # NFL Draft Predictor (MVP)
 
-Next.js (App Router) + Supabase + Tailwind. Users enter a name, pick up to **32** first-round prospects and **10** top-10 prospects, and view everyone on a **leaderboard**. Optional **admin** page records the real first round for simple scoring.
+Next.js (App Router) + Supabase + Tailwind. Users enter a name and picks. Admin can log in, manage submissions, and enter real draft results.
 
 ## Prerequisites
 
@@ -29,10 +29,12 @@ Next.js (App Router) + Supabase + Tailwind. Users enter a name, pick up to **32*
 
    **Security:** The service role key bypasses RLS. Use it only in server code (this app uses it in Server Actions and Server Components). Never expose it in client bundles or public repos.
 
-   Optional:
+   Required:
+   - `ADMIN_SECRET` — password for `/admin` login.
 
-   - `SUBMISSIONS_LOCK_AT` — ISO datetime (e.g. `2026-04-24T23:59:59Z`). Submissions are rejected on or after this time.
-   - `ADMIN_SECRET` — If set, `/admin` requires this secret to save draft results.
+   Optional (defaults already match this app's deadlines):
+   - `SUBMISSIONS_LOCK_AT` — defaults to `2026-04-23T19:30:00-04:00`
+   - `LEADERBOARD_REVEAL_AT` — defaults to `2026-04-23T20:00:00-04:00`
 
 5. **Run the dev server:**
 
@@ -56,7 +58,10 @@ Next.js (App Router) + Supabase + Tailwind. Users enter a name, pick up to **32*
 
 4. Deploy. Vercel runs `npm run build` automatically.
 
-5. After the first deploy, open your production URL: `/` to submit, `/leaderboard` to view entries, `/admin` to enter official picks (if `ADMIN_SECRET` is set).
+5. After the first deploy:
+   - `/` submit predictions
+   - `/leaderboard` view entries (public only after reveal time; admin can always view)
+   - `/admin` log in as admin, input official picks, and delete submissions
 
 **Supabase free tier:** Fits this MVP (Postgres + API limits are generous for a small app). **Vercel Hobby:** Sufficient for this stack.
 
@@ -71,9 +76,9 @@ When all **32** rows exist in `draft_results` (via Admin), the leaderboard shows
 
 - `app/page.tsx` — Home form
 - `app/leaderboard/page.tsx` — All submissions
-- `app/admin/page.tsx` — Enter real draft order
+- `app/admin/page.tsx` — Admin login + management
 - `app/actions/draft.ts` — Submit server action
-- `app/actions/admin.ts` — Save results server action
+- `app/actions/admin.ts` — Admin auth + save results + delete submission
 - `lib/supabase/admin.ts` — Service-role Supabase client (server-only)
 - `supabase/schema.sql` — Database DDL + seed
 

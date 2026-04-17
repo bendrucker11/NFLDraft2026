@@ -30,6 +30,6 @@ export type SubmissionWithPicks = {
     player_id: string;
     is_first_round: boolean;
     is_top_10: boolean;
-    players: { name: string } | null;
+    players: { name: string; position: PlayerPosition } | null;
   }[];
 };
