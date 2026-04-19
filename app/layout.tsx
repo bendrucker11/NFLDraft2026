@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { AdminSessionTeardown } from "@/components/AdminSessionTeardown";
+import { isAdminSession } from "@/lib/admin-session";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,16 +20,19 @@ export const metadata: Metadata = {
   description: "Predict the first round and top 10 of the NFL Draft",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const admin = await isAdminSession();
+
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
       >
+        {admin ? <AdminSessionTeardown /> : null}
         <header className="border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4">
             <Link href="/" className="text-lg font-semibold tracking-tight text-white">

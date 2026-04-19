@@ -126,7 +126,11 @@ export function DraftForm({ players, locked, lockMessage }: Props) {
         <p className="mt-1 text-xs text-[var(--muted)]">One submission per name.</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--muted)]">
+      <div
+        className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center gap-3 border-b border-[var(--border)] bg-[var(--background)]/95 px-4 py-3 text-sm text-[var(--muted)] backdrop-blur-md supports-[backdrop-filter]:bg-[var(--background)]/80"
+        aria-live="polite"
+        aria-label="Selection progress"
+      >
         <span>
           First round:{" "}
           <strong className={overFirst ? "text-red-400" : "text-white"}>
