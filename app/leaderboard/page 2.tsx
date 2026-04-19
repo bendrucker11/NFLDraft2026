@@ -18,8 +18,7 @@ export default async function LeaderboardPage() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold tracking-tight text-white">Leaderboard</h1>
         <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          Submissions are hidden until{" "}
-          {revealAt ? revealAt.toLocaleString() : "the reveal deadline"}. Admin can still view now.
+          Submissions are hidden until April 23rd at 8:00 PM.
         </p>
       </div>
     );
